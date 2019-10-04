@@ -11,7 +11,21 @@ jobs:
         - printf "%s\\n" "${GITHUB_TOKEN2}" | docker login docker.pkg.github.com --username ${GITHUB_USER} --password-stdin
         - docker build -t docker.pkg.github.com/${GITHUB_FULL_REPO_NAME_LC}/${GITHUB_REPO_LC}:${GITHUB_COMMIT} .
         - docker push docker.pkg.github.com/${GITHUB_FULL_REPO_NAME_LC}/${GITHUB_REPO_LC}:${GITHUB_COMMIT}
+  run_container:
+    image: docker:18.09.7
+    services:
+    - docker:18.09.7-dind
+    script:
+        - GITHUB_FULL_REPO_NAME_LC=$(printf "%s\\n" "${GITHUB_FULL_REPO_NAME}" | awk '{print tolower($0)}')
+        - GITHUB_REPO_LC=$(printf "%s\\n" "${GITHUB_REPO}" | awk '{print tolower($0)}')
+        - GITHUB_USER=$(printf "%s\\n" "${GITHUB_FULL_REPO_NAME_LC}" | sed -n 's/^\(.*\)\/.*$/\1/p')
+        - printf "%s\\n" "${GITHUB_TOKEN2}" | docker login docker.pkg.github.com --username ${GITHUB_USER} --password-stdin
+        - docker pull docker.pkg.github.com/${GITHUB_FULL_REPO_NAME_LC}/${GITHUB_REPO_LC}:${GITHUB_COMMIT}
+        - docker run docker.pkg.github.com/${GITHUB_FULL_REPO_NAME_LC}/${GITHUB_REPO_LC}:${GITHUB_COMMIT} env
 stages:
   - build_image:
       jobs:
         - build_image
+  - run_container:
+      jobs:
+        - run_container
